@@ -37,6 +37,8 @@ type CallOffer struct{ ID, Recipient string }
 type CallSession struct {
 	ID, Peer, Direction, Media, State, Reason string
 	CanAnswer, CanReject, CanHangup           bool
+	PeerVideo, LocalVideo                     bool
+	PeerOrientation                           int
 	CreatedAt, UpdatedAt                      time.Time
 }
 
@@ -52,6 +54,8 @@ type callBridge struct {
 	call       *meowcaller.Call
 	source     *livePCMSource
 	audio      *pcmBroadcaster
+	video      *annexBBroadcaster
+	controls   *videoControlBroadcaster
 	mu         sync.RWMutex
 	session    CallSession
 }
@@ -125,9 +129,26 @@ func (s *Whatsmiau) removeCallClient(instanceID string) {
 
 func newCallBridge(instanceID string, call *meowcaller.Call, direction string, onEnd func()) *callBridge {
 	now := time.Now().UTC()
-	b := &callBridge{instanceID: instanceID, call: call, source: newLivePCMSource(), audio: newPCMBroadcaster(), session: CallSession{ID: call.ID(), Peer: call.Peer().String(), Direction: direction, Media: "audio", State: callPhaseName(call.State()), CreatedAt: now, UpdatedAt: now}}
+	b := &callBridge{
+		instanceID: instanceID,
+		call:       call,
+		source:     newLivePCMSource(),
+		audio:      newPCMBroadcaster(),
+		video:      newAnnexBBroadcaster(),
+		controls:   newVideoControlBroadcaster(),
+		session: CallSession{
+			ID:        call.ID(),
+			Peer:      call.Peer().String(),
+			Direction: direction,
+			Media:     sessionMedia(call),
+			State:     callPhaseName(call.State()),
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+	}
 	call.Play(b.source)
 	call.Receive(meowcaller.SinkFunc(func(frame []float32) { b.audio.publish(frame) }))
+	attachCallVideo(b, call)
 	call.OnStateChange(func(phase meowcaller.CallPhase) {
 		b.update(func(view *CallSession) {
 			view.State = callPhaseName(phase)
@@ -156,8 +177,18 @@ func newCallBridge(instanceID string, call *meowcaller.Call, direction string, o
 }
 
 func (b *callBridge) teardown() {
-	_ = b.source.Close()
-	b.audio.close()
+	if b.source != nil {
+		_ = b.source.Close()
+	}
+	if b.audio != nil {
+		b.audio.close()
+	}
+	if b.video != nil {
+		b.video.close()
+	}
+	if b.controls != nil {
+		b.controls.close()
+	}
 }
 
 func (b *callBridge) update(fn func(*CallSession)) {
@@ -187,6 +218,12 @@ func callPhaseName(phase meowcaller.CallPhase) string {
 // OfferAudioCall places an audio call. API consumers can attach media through
 // OpenCallAudio after the call enters its media lifecycle.
 func (s *Whatsmiau) OfferAudioCall(ctx context.Context, instanceID string, remoteJID *types.JID) (*CallOffer, error) {
+	return s.OfferCall(ctx, instanceID, remoteJID, false)
+}
+
+// OfferCall places a 1:1 call. video advertises H.264; the client still has to
+// push Annex-B frames on OpenCallVideo after media is up.
+func (s *Whatsmiau) OfferCall(ctx context.Context, instanceID string, remoteJID *types.JID, video bool) (*CallOffer, error) {
 	if !s.callsEnabled() {
 		return nil, ErrCallSupportDisabled
 	}
@@ -211,7 +248,7 @@ func (s *Whatsmiau) OfferAudioCall(ctx context.Context, instanceID string, remot
 	if !ok {
 		return nil, errors.New("call support was not initialized; reconnect the instance")
 	}
-	call, err := callClient.Call(ctx, recipient.String())
+	call, err := callClient.CallWithOptions(ctx, recipient.String(), meowcaller.CallOptions{Video: video})
 	if err != nil {
 		return nil, err
 	}

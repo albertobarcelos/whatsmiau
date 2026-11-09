@@ -1,5 +1,9 @@
 # WhatsMiau
 
+> **Fork Nexsyn** of [whatsmiau/whatsmiau](https://github.com/whatsmiau/whatsmiau) `v1.7.0`.
+> This copy is modified: it exposes 1:1 **H.264 video** on the call API (in addition to PCM audio).
+> See `NOTICE` and `FORK.md`. Licensed under the Elastic License 2.0.
+
 ![logo-whatsmiau](logo.png)
 
 WhatsMiau is a backend service for WhatsApp, built with Go. It uses the Whatsmeow library to connect to WhatsApp and provides an HTTP API to send and receive messages.
@@ -41,7 +45,7 @@ To get a local copy up and running follow these simple steps.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/verbeux-ai/whatsmiau.git
+   git clone https://github.com/albertobarcelos/whatsmiau.git
    ```
 2. Install Go packages
    ```sh
@@ -127,7 +131,7 @@ The application is configured using environment variables. The following variabl
 | `PROXY_ADDRESSES` | A comma-separated list of proxy addresses. Example: `SOCKS5://user:pass@host:port,HTTP://host:port` | `` |
 | `PROXY_STRATEGY` | The strategy to use when selecting a proxy from the list (`RANDOM`). | `RANDOM` |
 | `PROXY_NO_MEDIA` | If set to `true`, media will not be sent through the proxy. | `false` |
-| `CALLS_ENABLED` | Enables the experimental authenticated 1:1 call API. | `false` |
+| `CALLS_ENABLED` | Enables the experimental authenticated 1:1 call API (PCM audio + H.264 video WebSocket in this fork). | `false` |
 | `CALL_DEBUG` | Logs sanitized incoming offer shapes for controlled protocol comparisons; no keys, ciphertexts, IDs, or JIDs. | `false` |
 
 Media URL downloads accept only HTTP(S) destinations with public IP addresses.

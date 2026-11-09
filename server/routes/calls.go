@@ -16,4 +16,6 @@ func Calls(group *echo.Group) {
 	group.POST("/:callID/reject", controller.Reject)
 	group.POST("/:callID/hangup", controller.Hangup)
 	group.GET("/:callID/audio", controller.Audio)
+	group.GET("/:callID/video", controller.Video)
+	group.POST("/:callID/video", controller.SetVideo)
 }

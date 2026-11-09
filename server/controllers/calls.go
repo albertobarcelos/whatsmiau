@@ -32,8 +32,8 @@ func NewCalls(w *whatsmiau.Whatsmiau) *Calls {
 	return &Calls{whatsmiau: w, validate: validator.New()}
 }
 
-// Offer places a direct 1:1 audio call.
-// @Summary Place an audio call
+// Offer places a direct 1:1 call (audio, or video when body.video is true).
+// @Summary Place a 1:1 call
 // @Tags Calls
 // @Accept json
 // @Produce json
@@ -61,7 +61,7 @@ func (s *Calls) Offer(ctx echo.Context) error {
 	if err != nil {
 		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid call target")
 	}
-	offer, err := s.whatsmiau.OfferAudioCall(ctx.Request().Context(), ctx.Param("instance"), jid)
+	offer, err := s.whatsmiau.OfferCall(ctx.Request().Context(), ctx.Param("instance"), jid, request.Video)
 	if err != nil {
 		switch {
 		case errors.Is(err, whatsmiau.ErrInstanceNotFound):

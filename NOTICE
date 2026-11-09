@@ -1,0 +1,14 @@
+This is a modified copy of WhatsMiau.
+
+Upstream: https://github.com/whatsmiau/whatsmiau (tag v1.7.0)
+Fork:     https://github.com/albertobarcelos/whatsmiau
+Branch:   feat/video-calls
+
+Changes relative to upstream:
+- 1:1 call API exposes H.264 Annex-B video (place/answer with video,
+  WebSocket media, mid-call camera enable/upgrade) on top of the existing
+  PCM audio bridge. Video is carried by meowcaller; this fork only wires it
+  to HTTP/WebSocket the same way audio already is.
+
+Licensed under the Elastic License 2.0. See LICENSE.
+The original copyright and license notices are preserved.
